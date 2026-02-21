@@ -51,3 +51,8 @@ def get_schema_ddl() -> list[str]:
     );
     """
     ]
+
+def init_schema(conn):
+    for ddl in get_schema_ddl():
+        conn.execute(ddl)
+    conn.commit()
