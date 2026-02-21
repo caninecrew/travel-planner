@@ -18,3 +18,19 @@ def create_day(conn: Connection, trip_id: int, date_str: str) -> int:
     except sqlite3.IntegrityError as e:
         # If you add UNIQUE(trip_id, date) later, this becomes your friendly message.
         raise ValidationError("could not create day (possible duplicate date for this trip).") from e
+    
+
+def set_day_date(conn, day_id: int, date_str: str) -> None:
+    if day_id <= 0:
+        raise ValidationError("day_id must be positive.")
+
+    validate_date_string(date_str)
+
+    day = day_repository.get_day(conn, day_id)
+    if day is None:
+        raise ValidationError("day not found.")
+
+    try:
+        day_repository.update_day_date(conn, day_id, date_str)
+    except sqlite3.IntegrityError:
+        raise ValidationError("duplicate date for this trip.")

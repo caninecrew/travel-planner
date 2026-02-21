@@ -46,3 +46,11 @@ def delete_day(conn, day_id: int) -> None:
         (day_id,),
     )
     conn.commit()
+
+
+def update_day_date(conn, day_id: int, date_str: str) -> None:
+    conn.execute(
+        "UPDATE days SET date = ? WHERE id = ?;",
+        (date_str, day_id),
+    )
+    conn.commit()

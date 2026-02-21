@@ -9,7 +9,7 @@ from travel_planner.persistence.item_repository import (
     create_item_scheduled as repo_create_item_scheduled,
     list_items_for_day,
 )
-
+from travel_planner.persistence import item_repository
 
 def _validate_basic_fields(title: str, category: str) -> tuple[str, str]:
     if not isinstance(title, str):
@@ -148,3 +148,94 @@ def check_tight_connections_for_day(
             )
 
     return warnings
+
+def update_item_fields(
+    conn,
+    item_id: int,
+    *,
+    title: str | None = None,
+    category: str | None = None,
+    notes: str | None = None,
+    tags: str | None = None,
+    pinned: bool | None = None,
+) -> None:
+    if item_id <= 0:
+        raise ValidationError("item_id must be positive.")
+
+    item = item_repository.get_item(conn, item_id)
+    if item is None:
+        raise ValidationError("item not found.")
+
+    if title is not None:
+        title = title.strip()
+        if not title:
+            raise ValidationError("title must not be blank.")
+
+    if category is not None:
+        category = category.strip()
+        if not category:
+            raise ValidationError("category must not be blank.")
+
+    pinned_int = None
+    if pinned is not None:
+        pinned_int = 1 if pinned else 0
+
+    item_repository.update_item_fields(
+        conn,
+        item_id,
+        title=title,
+        category=category,
+        notes=notes,
+        tags=tags,
+        pinned=pinned_int,
+    )
+
+
+def set_item_time(
+    conn,
+    item_id: int,
+    start_min: int,
+    end_min: int,
+    *,
+    reject_overlaps: bool = True,
+) -> None:
+    if item_id <= 0:
+        raise ValidationError("item_id must be positive.")
+
+    validate_time_range(start_min, end_min)
+
+    item = item_repository.get_item(conn, item_id)
+    if item is None:
+        raise ValidationError("item not found.")
+
+    day_id = item["day_id"]
+
+    if reject_overlaps:
+        existing = item_repository.list_items_for_day(conn, day_id)
+        for other in existing:
+            if other["id"] == item_id:
+                continue
+
+            o_start = other.get("start_min")
+            o_end = other.get("end_min")
+
+            if o_start is None or o_end is None:
+                continue
+
+            if start_min < o_end and o_start < end_min:
+                raise ValidationError(
+                    f"overlaps with item {other['id']}."
+                )
+
+    item_repository.update_item_time(conn, item_id, start_min, end_min)
+
+
+def clear_item_time(conn, item_id: int) -> None:
+    if item_id <= 0:
+        raise ValidationError("item_id must be positive.")
+
+    item = item_repository.get_item(conn, item_id)
+    if item is None:
+        raise ValidationError("item not found.")
+
+    item_repository.clear_item_time(conn, item_id)

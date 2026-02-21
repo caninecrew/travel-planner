@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlite3 import Connection
 
 from travel_planner.domain.validators import ValidationError
+from travel_planner.services import trip_service
 from travel_planner.cli.formatters import print_table
 
 # Prefer service layer when present
@@ -59,4 +60,9 @@ def cmd_trip_delete(conn: Connection, trip_id: int) -> int:
 
     delete_trip(conn, trip_id)
     print(f"Deleted trip id={trip_id}")
+    return 0
+
+def cmd_trip_rename(conn, trip_id: int, name: str) -> int:
+    trip_service.rename_trip(conn, trip_id, name)
+    print(f"Renamed trip id={trip_id}")
     return 0

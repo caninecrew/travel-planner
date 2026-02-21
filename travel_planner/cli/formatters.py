@@ -108,3 +108,21 @@ def print_item_summary(item: dict[str, Any]) -> None:
 
     pin_str = "[PIN]" if pinned else ""
     print(f"{item_id}: {time_str} {pin_str} {title} ({category})".strip())
+
+def fmt_time_range(start_min: int | None, end_min: int | None, *, is_all_day: bool = False) -> str:
+    """
+    Format a time range for display.
+
+    Rules:
+      - all-day -> "ALL DAY"
+      - both None -> "UNSCHEDULED"
+      - one None -> "INVALID" (should not happen if validators are used)
+      - else -> "HH:MM–HH:MM"
+    """
+    if is_all_day:
+        return "ALL DAY"
+    if start_min is None and end_min is None:
+        return "UNSCHEDULED"
+    if start_min is None or end_min is None:
+        return "INVALID"
+    return f"{fmt_minutes(start_min)}–{fmt_minutes(end_min)}"

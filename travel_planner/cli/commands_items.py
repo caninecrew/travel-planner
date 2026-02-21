@@ -4,6 +4,8 @@ from sqlite3 import Connection
 
 from travel_planner.domain.validators import ValidationError
 from travel_planner.cli.formatters import fmt_minutes, fmt_money, print_table
+from travel_planner.services import item_service
+
 
 # Prefer service layer when present
 try:
@@ -230,4 +232,52 @@ def cmd_item_check(conn: Connection, day_id: int, buffer_min: int = 15) -> int:
         rows = [[str(t["prev_item_id"]), str(t["next_item_id"]), str(t["gap_min"])] for t in tight]
         print_table(headers, rows)
 
+    return 0
+
+
+def cmd_item_update(
+    conn,
+    item_id: int,
+    *,
+    title: str | None,
+    category: str | None,
+    notes: str | None,
+    tags: str | None,
+    pinned: int | None,
+    start: int | None,
+    end: int | None,
+    clear_time: bool,
+    allow_overlap: bool,
+) -> int:
+
+    if clear_time and (start is not None or end is not None):
+        raise ValueError("Cannot use --clear-time with --start/--end.")
+
+    if start is not None or end is not None:
+        if start is None or end is None:
+            raise ValueError("--start and --end must both be provided.")
+
+        item_service.set_item_time(
+            conn,
+            item_id,
+            start,
+            end,
+            reject_overlaps=not allow_overlap,
+        )
+
+    elif clear_time:
+        item_service.clear_item_time(conn, item_id)
+
+    if any(v is not None for v in [title, category, notes, tags, pinned]):
+        item_service.update_item_fields(
+            conn,
+            item_id,
+            title=title,
+            category=category,
+            notes=notes,
+            tags=tags,
+            pinned=(bool(pinned) if pinned is not None else None),
+        )
+
+    print(f"Updated item id={item_id}")
     return 0

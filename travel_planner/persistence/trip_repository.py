@@ -40,3 +40,11 @@ def delete_trip(conn, trip_id: int) -> None:
         (trip_id,),
     )
     conn.commit()
+
+
+def rename_trip(conn, trip_id: int, name: str) -> None:
+    conn.execute(
+        "UPDATE trips SET name = ? WHERE id = ?;",
+        (name, trip_id),
+    )
+    conn.commit()

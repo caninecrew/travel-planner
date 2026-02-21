@@ -4,6 +4,8 @@ from sqlite3 import Connection
 
 from travel_planner.domain.validators import ValidationError
 from travel_planner.cli.formatters import print_table
+from travel_planner.services import day_service
+
 
 # Prefer service layer when present
 try:
@@ -70,4 +72,9 @@ def cmd_day_delete(conn: Connection, day_id: int) -> int:
 
     delete_day(conn, day_id)
     print(f"Deleted day id={day_id}")
+    return 0
+
+def cmd_day_set_date(conn, day_id: int, date_str: str) -> int:
+    day_service.set_day_date(conn, day_id, date_str)
+    print(f"Updated day id={day_id}")
     return 0

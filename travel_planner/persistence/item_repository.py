@@ -2,11 +2,6 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-
-def _now_iso_utc() -> str:
-    return datetime.now(timezone.utc).isoformat()
-
-
 def create_item_min(
     conn,
     day_id: int,
@@ -191,5 +186,78 @@ def delete_item(conn, item_id: int) -> None:
     conn.execute(
         "DELETE FROM items WHERE id = ?;",
         (item_id,),
+    )
+    conn.commit()
+
+def _now_iso_utc() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def update_item_fields(
+    conn,
+    item_id: int,
+    *,
+    title: str | None = None,
+    category: str | None = None,
+    notes: str | None = None,
+    tags: str | None = None,
+    pinned: int | None = None,
+) -> None:
+    fields = []
+    values = []
+
+    if title is not None:
+        fields.append("title = ?")
+        values.append(title)
+
+    if category is not None:
+        fields.append("category = ?")
+        values.append(category)
+
+    if notes is not None:
+        fields.append("notes = ?")
+        values.append(notes)
+
+    if tags is not None:
+        fields.append("tags = ?")
+        values.append(tags)
+
+    if pinned is not None:
+        fields.append("pinned = ?")
+        values.append(pinned)
+
+    if not fields:
+        return
+
+    fields.append("updated_at = ?")
+    values.append(_now_iso_utc())
+
+    values.append(item_id)
+
+    sql = f"UPDATE items SET {', '.join(fields)} WHERE id = ?;"
+    conn.execute(sql, tuple(values))
+    conn.commit()
+
+
+def update_item_time(conn, item_id: int, start_min: int, end_min: int) -> None:
+    conn.execute(
+        """
+        UPDATE items
+        SET start_min = ?, end_min = ?, updated_at = ?
+        WHERE id = ?;
+        """,
+        (start_min, end_min, _now_iso_utc(), item_id),
+    )
+    conn.commit()
+
+
+def clear_item_time(conn, item_id: int) -> None:
+    conn.execute(
+        """
+        UPDATE items
+        SET start_min = NULL, end_min = NULL, updated_at = ?
+        WHERE id = ?;
+        """,
+        (_now_iso_utc(), item_id),
     )
     conn.commit()
