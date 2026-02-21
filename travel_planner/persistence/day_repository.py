@@ -1,11 +1,48 @@
-def create_day(conn, day_id: str, trip_id: str, date: str) -> None:
-    pass
+def create_day(conn, trip_id: int, date: str) -> int:
+    cursor = conn.execute(
+        "INSERT INTO days (trip_id, date) VALUES (?, ?);",
+        (trip_id, date),
+    )
+    conn.commit()
+    return cursor.lastrowid
 
-def get_day(conn, day_id: str) -> dict | None:
-    pass
+def get_day(conn, day_id: int) -> dict | None:
+    cursor = conn.execute(
+        "SELECT id, trip_id, date FROM days WHERE id = ?;",
+        (day_id,),
+    )
+    row = cursor.fetchone()
 
-def list_days_for_trip(conn, trip_id: str) -> list[dict]:
-    return []
+    if row is None:
+        return None
 
-def delete_day(conn, day_id: str) -> None:
-    pass
+    return {
+        "id": row[0],
+        "trip_id": row[1],
+        "date": row[2],
+    }
+
+
+def list_days_for_trip(conn, trip_id: int) -> list[dict]:
+    cursor = conn.execute(
+        "SELECT id, trip_id, date FROM days WHERE trip_id = ? ORDER BY date ASC;",
+        (trip_id,),
+    )
+    rows = cursor.fetchall()
+
+    return [
+        {
+            "id": row[0],
+            "trip_id": row[1],
+            "date": row[2],
+        }
+        for row in rows
+    ]
+
+
+def delete_day(conn, day_id: int) -> None:
+    conn.execute(
+        "DELETE FROM days WHERE id = ?;",
+        (day_id,),
+    )
+    conn.commit()
